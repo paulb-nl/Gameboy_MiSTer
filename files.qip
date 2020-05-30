@@ -17,3 +17,5 @@ set_global_assignment -name VERILOG_FILE rtl/link.v
 set_global_assignment -name VERILOG_FILE rtl/sgb.v
 set_global_assignment -name SDC_FILE Gameboy.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Gameboy.sv
+set_global_assignment -name VERILOG_FILE jt49_dcrm2.v
+

@@ -538,7 +538,7 @@ wire [14:0] lcd_data;
 wire [1:0] lcd_mode;
 wire lcd_on;
 
-assign AUDIO_S = 0;
+assign AUDIO_S = 1'b1;
 
 wire reset = (RESET | status[0] | buttons[1] | cart_download | bk_loading);
 wire speed;
@@ -548,6 +548,32 @@ always @(posedge clk_sys) if(reset) begin
 	if(status[15:14]) isGBC <= status[15];
 	else if(cart_download) isGBC <= !filetype[7:4];
 end
+
+// Filter CE impacts frequency response
+reg [4:0] filter_cnt;
+always_ff @(posedge clk_sys) begin
+	if (ce_cpu2x)
+		filter_cnt<= filter_cnt + 1'b1;
+end
+
+wire [15:0] audio_l, audio_r;
+
+// Remove DC offset and convert to signed
+jt49_dcrm2 #(.sw(16)) dc_filter_l (
+	.clk  (clk_sys),
+	.cen  (ce_cpu2x & &filter_cnt),
+	.rst  (reset),
+	.din  (audio_l),
+	.dout (AUDIO_L)
+);
+
+jt49_dcrm2 #(.sw(16)) dc_filter_r(
+	.clk  (clk_sys),
+	.cen  (ce_cpu2x & &filter_cnt),
+	.rst  (reset),
+	.din  (audio_r),
+	.dout (AUDIO_R)
+);
 
 // the gameboy itself
 gb gb (
@@ -577,8 +603,8 @@ gb gb (
 	.gbc_bios_do     ( bios_do    ),
 
 	// audio
-	.audio_l 	 ( AUDIO_L	  ),
-	.audio_r 	 ( AUDIO_R	  ),
+	.audio_l 	 ( audio_l	  ),
+	.audio_r 	 ( audio_r	  ),
 	
 	// interface to the lcd
 	.lcd_clkena  ( lcd_clkena ),
